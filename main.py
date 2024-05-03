@@ -1,28 +1,36 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session, joinedload
 
 from src.config import DB_HOST
 from src.services import create_db
 from src.db import engine
+from src.db import get_db
 
-from employee.model import Base
-from employee.services import api_employee
+from employee.model import Base, Employee
+from employee.services import api_employee, count_tasks
 
 from tasks.services import api_task
-
 
 create_db()
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(
+    title="Трекер задач сотрудников",
+)
 
-app.include_router(api_employee, tags=['Employees'], prefix='/employees')
-app.include_router(api_task, tags=['Tasks'], prefix='/tasks')
+app.include_router(api_employee)
+app.include_router(api_task)
 
-@app.get("/api/healthchecker")
-def root():
-    return {"message": "Welcome to FastAPI with SQLAlchemy"}
+
+@app.get('/')
+def root(db: Session = Depends(get_db)):
+    employees = db.query(Employee).options(joinedload(Employee.tasks)).all()
+    employees = sorted(employees, key=count_tasks, reverse=True)
+    return {'status': 'success',
+            'results': len(employees),
+            'employees': employees}
 
 
 # To run locally
