@@ -1,14 +1,16 @@
 """
 Файл со схемой Сотрудник
 """
+from uuid import UUID
+from typing import List
 from pydantic import BaseModel, EmailStr
 
 
-class EmployeeSchema(BaseModel):
+class BaseEmployeeSchema(BaseModel):
     """
-    Схема Сотрудник.
+    Базовая схема Сотрудник.
+    Без uuid
     """
-    id: str | None = None
     email: EmailStr
     last_name: str
     first_name: str
@@ -19,3 +21,33 @@ class EmployeeSchema(BaseModel):
         from_attributes = True
         population_by_name = True
         arbitrary_types_allowed = True
+        json_schema_extra = {
+            "example": {
+                "email": "example@test.com",
+                "last_name": "Иванов",
+                "first_name": "Иван",
+                "patronymic": "Иванович",
+                "post": "Инженер"
+            }
+        }
+
+
+class EmployeeSchema(BaseEmployeeSchema):
+    """
+    Схема Сотрудник.
+    Добавлен UUID
+    """
+    id: UUID
+
+
+class EmployeeCreateUpdateSchema(BaseEmployeeSchema):
+    """
+    Схема Сотрудник для создания/обновления.
+    """
+
+
+class EmployeeList(BaseModel):
+    """
+    Список заданий
+    """
+    employees: List[EmployeeSchema]
